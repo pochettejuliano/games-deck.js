@@ -1,9 +1,9 @@
 /*
-    Deck.JS - A playing card engine
+    Deck.JS - A basic playing card deck engine using French suits
     Cesar Juliano
 */
 
-function Deck ( shuffled, withJokers ) {
+function Deck ( values, acesHigh, shuffled, withJokers ) {
 
     // PUBLIC CONSTANTS //
     this.CARD_STATE_DEALT = "Dealt";
@@ -25,6 +25,7 @@ function Deck ( shuffled, withJokers ) {
                      "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King" ];
 
     var SUIT_MAP = [ "Clubs", "Diamonds", "Hearts", "Spades" ];
+    var VALUES = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11 ];
 
 
     // PRIVATE PROPERTIES //
@@ -34,8 +35,16 @@ function Deck ( shuffled, withJokers ) {
 
     var _that = this;
 
+    var _acesHigh = acesHigh || false;
+    var _shuffled = shuffled || false;
+    var _withJokers = withJokers || false;
+
 
     // PUBLIC API //
+    this.acesHigh = function () {
+        return _acesHigh;
+    };
+
     this.collect = function () {
         _dealtCards.forEach ( function ( card ) {
             moveCard( card, _deck, this.INSERT_BOTTOM )
@@ -60,7 +69,7 @@ function Deck ( shuffled, withJokers ) {
         }
 
         while ( howMany-- ) {
-            cardsToDeal( moveCard( _deck[ 0 ], _dealtCards, this.INSERT_BOTTOM ) );
+            cardsToDeal.push( moveCard( _deck[ 0 ], _dealtCards, this.INSERT_BOTTOM ) );
         }
 
         return cardsToDeal;
@@ -102,6 +111,11 @@ function Deck ( shuffled, withJokers ) {
         }
 
         _deck = shuffledDeck;
+        _shuffled = true;
+    };
+
+    this.shuffled = function () {
+        return _shuffled;
     };
 
     this.sort = function () {
@@ -114,31 +128,39 @@ function Deck ( shuffled, withJokers ) {
                 return 1;
             }
         } );
+
+        _shuffled = false;
+    };
+
+    this.withJokers = function () {
+        return _withJokers;
     };
 
 
     // PRIVATE API //
     function createCards () {
-        // initialize deck array
-        _deck = new Array();
+        // check values
+        if ( !values ) {
+            values = VALUES;
+        } else if ( values.length < VALUES.length ) {
+            handleError( "Create Error", "Cannot create cards because of improper values array." );
+        }
 
         // create cards and put into the deck
         for ( var i = 0; i < SUIT_MAP.length; i++ ) {
             for ( var j = 1; j < RANK_MAP.length; j++ ) {
-
-                // TODO: set card value
-                moveCard( new Card( j, SUIT_MAP[ i ] ), _deck );
+                moveCard( new Card( j, SUIT_MAP[ i ], j == 1 && _acesHigh ? values[ values.length - 1 ] : values[ j ] ), _deck );
             }
         }
 
         // add 2 Jokers to the deck
-        if ( withJokers ) {
-            moveCard( new Card( 0, "" ), _deck );
-            moveCard( new Card( 0, "" ), _deck );
+        if ( _withJokers ) {
+            moveCard( new Card( 0, "", values[ 0 ] ), _deck );
+            moveCard( new Card( 0, "", values[ 0 ] ), _deck );
         }
 
         // shuffle the deck
-        if ( shuffled ) {
+        if ( _shuffled ) {
             _that.shuffle();
         }
     }
@@ -275,42 +297,43 @@ function Deck ( shuffled, withJokers ) {
 
 
     // CARD OBJECT //
-    function Card ( rank, suit ) {
+    function Card ( rank, suit, value ) {
         var _rank = rank;       // pip or face: Ace, Four, Seven, Jack, King, etc.
         var _suit = suit;       // symbol: Hearts, Clubs, etc.; "" for Jokers
         var _state = state;     // specifies whether card is in deck, dealt, or removed from play
-        var _value;             // numeric value to mathematically compare cards
+        var _value = value;     // numeric value to mathematically compare cards
+
+
+        this.face = function () {
+            return _rank > 10;
+        }
 
         this.getRank = function () {
             return _rank;
-        };
-
-        this.getSuit = function () {
-            return _suit
         };
 
         this.getState = function () {
             return _state;
         };
 
-        this.getValue = function () {
-            return _value;
-        };
-
         this.getStateSetter = function () {
             if ( this == _that ) {
                 return setState;
             } else {
-                handleError( "State Set Error", "Cannot set state of card outside of the deck." );
+                handleError( "State Set Error", "Cannot set state of " + this.toString() + " outside of Deck API." );
             }
+        };
+
+        this.getSuit = function () {
+            return _suit
+        };
+
+        this.getValue = function () {
+            return _value;
         };
 
         this.toString = function () {
             return RANK_MAP[ _rank ] + ( _rank ? " of " + _suit : "" );
-        };
-
-        this.setValue = function ( value ) {
-            _value = value;
         };
 
         function setState ( state ) {
