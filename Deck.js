@@ -1,32 +1,19 @@
 /*
-- Can Borrow methods from Array
-- interface array methods
-- Extend Array
-- Composition
-- Array like Object
+    Deck.JS - A playing card engine
+    Cesar Juliano
 */
 
-
-// .remove = like select but out of play
-// .pick = random 1
-// .select = actual cards
-// .deal = get from top
-.insert - put back dealt or removed card
-.collect - get all dealt cards
-//.sort - sort cards in deck
-
-.inDeck( card )
-.isShuffled
-.areJokersIncluded
-
-.setAcesHigh
-.areAcesHigh
-
-
-
-function Deck ( shuffled, includeJokers ) {
+function Deck ( shuffled, withJokers ) {
 
     // PUBLIC CONSTANTS //
+    this.CARD_STATE_DEALT = "Dealt";
+    this.CARD_STATE_IN_DECK = "In Deck";
+    this.CARD_STATE_REMOVED = "Removed";
+
+    this.INSERT_BOTTOM = -1;
+    this.INSERT_MIDDLE_RANDOM = -2;
+    this.INSERT_TOP = -3;
+
     this.SUIT_CLUBS = "Clubs";
     this.SUIT_DIAMONDS = "Diamonds";
     this.SUIT_HEARTS = "Hearts";
@@ -41,7 +28,7 @@ function Deck ( shuffled, includeJokers ) {
 
 
     // PRIVATE PROPERTIES //
-    var _deck;
+    var _deck = new Array();
     var _dealtCards = new Array();
     var _removedCards = new Array();
 
@@ -49,6 +36,12 @@ function Deck ( shuffled, includeJokers ) {
 
 
     // PUBLIC API //
+    this.collect = function () {
+        _dealtCards.forEach ( function ( card ) {
+            moveCard( card, _deck, this.INSERT_BOTTOM )
+        } );
+    };
+
     this.count = function () {
         return _deck.length;
     };
@@ -57,57 +50,48 @@ function Deck ( shuffled, includeJokers ) {
         var cardsToDeal = [];
 
         if ( _deck.length == 0 ) {
-            handleError( "Dealing Error", "No more cards in deck." );
+            handleError( "Dealing Error", "Deck is empty." );
         }
 
         if ( !howMany ) {
             howMany = 1;
         } else if ( howMany > _deck.length ) {
-            // Option 1: set to cards remaining
-            howMany = _deck.length;
-
-            // Option 2: throw exception
-            // handleError( "Dealing Error", "Number of cards requested dealt is more than remaining cards in deck." );
+            handleError( "Dealing Error", "Number of cards requested dealt is more than remaining cards in deck." );
         }
 
-        cardsToDeal = _deck.splice( 0, howMany );
-        _dealtCards = _dealtCards.concat( cardsToDeal );
+        while ( howMany-- ) {
+            cardsToDeal( moveCard( _deck[ 0 ], _dealtCards, this.INSERT_BOTTOM ) );
+        }
+
         return cardsToDeal;
     };
 
-    this.insert = function ( cards, location ) {
-        // TODO: Remove from _dealtCards or _removedCards
-        // TODO: Handle list of cards
-
-        if ( cards instanceof Card && _deck.indexOf( cards ) == -1 ) {
-            if ( location == -1 ) {
-                _deck.unshift( cards );
-            } else if ( location == 0 ) {
-                _deck.splice( Math.floor( Math.random() * ( _deck.length - 1 ) ) + 1, 0, cards );
-            } else {
-                _deck.push( cards );
-            }
+    this.insert = function ( item, position ) {
+        if ( item instanceof Card ) {
+            moveCard( item, _deck, position )
+        } else if ( item instanceof Array ) {
+            item.forEach( function ( card ) {
+                moveCard( card, _deck, position );
+            } );
+        } else {
+            handleError( "Insert Error", "Invalid format" );
         }
-    }
+    };
 
     this.pick = function () {
-        var cardToPick;
-
         if ( _deck.length == 0 ) {
-            handleError( "Dealing Error", "No more cards in deck." );
+            handleError( "Dealing Error", "Deck is empty." );
         }
 
-        cardToPick = _deck.splice( Math.floor( Math.random() * _deck.length ), 1 )[ 0 ];
-        _dealtCards.push( cardToPick );
-        return cardToPick;
+        return moveCard( _deck[ Math.floor( Math.random() * _deck.length ) ], _deck, _dealtCards, this.INSERT_BOTTOM );
     };
 
     this.remove = function ( selection ) {
-        return getCards( selection, _removedCards );
-    }
+        return getCards( selection, _deck, _removedCards, this.INSERT_BOTTOM );
+    };
 
     this.select = function ( selection ) {
-        return getCards( selection, _dealtCards );
+        return getCards( selection, _deck, _dealtCards, this.INSERT_BOTTOM );
     };
 
     this.shuffle = function () {
@@ -130,7 +114,7 @@ function Deck ( shuffled, includeJokers ) {
                 return 1;
             }
         } );
-    }
+    };
 
 
     // PRIVATE API //
@@ -143,14 +127,14 @@ function Deck ( shuffled, includeJokers ) {
             for ( var j = 1; j < RANK_MAP.length; j++ ) {
 
                 // TODO: set card value
-                _deck.push( new Card( j, SUIT_MAP[ i ] ) );
+                moveCard( new Card( j, SUIT_MAP[ i ] ), _deck );
             }
         }
 
         // add 2 Jokers to the deck
-        if ( includeJokers ) {
-            _deck.push( new Card( 0, "" ) );
-            _deck.push( new Card( 0, "" ) );
+        if ( withJokers ) {
+            moveCard( new Card( 0, "" ), _deck );
+            moveCard( new Card( 0, "" ), _deck );
         }
 
         // shuffle the deck
@@ -159,40 +143,35 @@ function Deck ( shuffled, includeJokers ) {
         }
     }
 
-    function getCards ( selection, whichStack ) {
-        var cardsToSelect;
-
+    function getCards ( selection, from, to, position ) {
         switch ( typeof selection ) {
             case "object" :
-                cardsToSelect = getCardsByIdentity( selection );
+                return getCardsByIdentity( selection, from, to, position );
             break;
 
             case "string" :
-                cardsToSelect = getCardsByProperty( "getSuit", selection )
+                return getCardsByProperty( "getSuit", selection, from, to, position )
             break;
 
             case "number" :
-                cardsToSelect = getCardsByProperty( "getRank", selection );
+                return getCardsByProperty( "getRank", selection, from, to, position );
             break;
 
             default :
                 handleError( "Get Error", "Improper criteria." );
         }
-
-        whichStack = whichStack.concat( cardsToSelect );
-        return cardsToSelect;
     }
 
-    function getCardsByIdentity ( cards ) {
+    function getCardsByIdentity ( cards, from, to, position ) {
         var cardsToGet = [];
         var j;
 
         for ( var i = 0; i < cards.length; i++ ) {
             j = 0;
 
-            while ( j < _deck.length ) {
-                if ( _deck[ j ].getRank() == cards[ i ].rank && _deck[ j ].getSuit() == cards[ i ].suit ) {
-                    cardsToGet.push( _deck.splice( j, 1 )[ 0 ] );
+            while ( j < from.length ) {
+                if ( from[ j ].getRank() == cards[ i ].rank && from[ j ].getSuit() == cards[ i ].suit ) {
+                    cardsToGet.push( moveCard( from[ j ], to, position ) );
                 } else {
                     j++;
                 }
@@ -202,13 +181,13 @@ function Deck ( shuffled, includeJokers ) {
         return cardsToGet;
     }
 
-    function getCardsByProperty ( getter, value ) {
+    function getCardsByProperty ( getter, value, from, to, position ) {
         var cardsToGet = [];
         var i = 0;
 
-        while ( i < _deck.length ) {
-            if ( _deck[ i ][ getter ]() == value ) {
-                cardsToGet.push( _deck.splice( i, 1 )[ 0 ] );
+        while ( i < from.length ) {
+            if ( from[ i ][ getter ]() == value ) {
+                cardsToGet.push( moveCard( from[ i ], to, position ) );
             } else {
                 i++;
             }
@@ -221,12 +200,86 @@ function Deck ( shuffled, includeJokers ) {
         throw { name : name, message : message };
     }
 
+    function moveCard ( card, to, position ) {
+        var from;
+        var index;
+        var state;
+
+        // remove card from source stack, if existing
+        switch( card.getState() ) {
+            case _that.CARD_STATE_DEALT :
+                from = _dealtCards;
+            break;
+
+            case _that.CARD_STATE_IN_DECK :
+                from = _deck;
+            break;
+
+            case _that.CARD_STATE_REMOVED :
+                from = _removedCards;
+            break;
+
+            default :
+        }
+
+        if ( from ) {
+            index = from.indexOf( card );
+            from.splice( index, 1 );
+        }
+
+        // put card in destination stack at specified position
+        index = to.indexOf( card );
+
+        if ( index != -1 ) {
+            handleError( "Move Error", card.toString() + " is already in the destination stack" );
+        }
+
+        switch ( position ) {
+            case _that.INSERT_TOP :
+                to.unshift( card );
+            break;
+
+            case _that.INSERT_MIDDLE_RANDOM :
+                to.splice( Math.floor( Math.random() * ( to.length -1 ) ) + 1, 0, card );
+            break;
+
+            case _that.INSERT_BOTTOM :
+            case undefined :
+                to.push( card );
+            break;
+
+            default :
+                to.splice( position, 0, card );
+        }
+
+        // set new card state
+        switch ( to ) {
+            case _deck :
+                state = _that.CARD_STATE_IN_DECK;
+            break;
+
+            case _dealtCards :
+                state = _that.CARD_STATE_DEALT;
+            break;
+
+            case _removedCards :
+                state = _that.CARD_STATE_REMOVED;
+            break ;
+
+            default :
+        }
+
+        card.getStateSetter.call( this ).call( card, state );
+        return card;
+    }
+
 
     // CARD OBJECT //
     function Card ( rank, suit ) {
-        var _rank = rank;   // pip or face: Ace, Four, Seven, Jack, King, etc.
-        var _suit = suit;   // symbol: Hearts, Clubs, etc.; "" for Jokers
-        var _value;         // numeric value to mathematically compare cards
+        var _rank = rank;       // pip or face: Ace, Four, Seven, Jack, King, etc.
+        var _suit = suit;       // symbol: Hearts, Clubs, etc.; "" for Jokers
+        var _state = state;     // specifies whether card is in deck, dealt, or removed from play
+        var _value;             // numeric value to mathematically compare cards
 
         this.getRank = function () {
             return _rank;
@@ -236,9 +289,21 @@ function Deck ( shuffled, includeJokers ) {
             return _suit
         };
 
+        this.getState = function () {
+            return _state;
+        };
+
         this.getValue = function () {
             return _value;
-        }
+        };
+
+        this.getStateSetter = function () {
+            if ( this == _that ) {
+                return setState;
+            } else {
+                handleError( "State Set Error", "Cannot set state of card outside of the deck." );
+            }
+        };
 
         this.toString = function () {
             return RANK_MAP[ _rank ] + ( _rank ? " of " + _suit : "" );
@@ -247,10 +312,13 @@ function Deck ( shuffled, includeJokers ) {
         this.setValue = function ( value ) {
             _value = value;
         };
+
+        function setState ( state ) {
+            _state = state;
+        }
     }
 
 
     // STARTING POINT //
     createCards();
-
 }
