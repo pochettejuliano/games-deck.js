@@ -1,34 +1,17 @@
 /*
-    Deck.JS - A basic playing card deck engine using French suits
+    Deck.JS - A basic playing card engine
     Cesar Juliano
 */
 
 function Deck ( values, acesHigh, shuffled, withJokers ) {
 
-    // PUBLIC CONSTANTS //
-    this.CARD_STATE_DEALT = "Dealt";
-    this.CARD_STATE_IN_DECK = "In Deck";
-    this.CARD_STATE_REMOVED = "Removed";
-
-    this.INSERT_BOTTOM = -1;
-    this.INSERT_MIDDLE_RANDOM = -2;
-    this.INSERT_TOP = -3;
-
-    this.SUIT_CLUBS = "Clubs";
-    this.SUIT_DIAMONDS = "Diamonds";
-    this.SUIT_HEARTS = "Hearts";
-    this.SUIT_SPADES = "Spades";
-
-
-    // PRIVATE CONSTANTS //
+    // PRIVATE PROPERTIES //
     var RANK_MAP = [ "Joker", "Ace", "Two", "Three", "Four", "Five", "Six",
                      "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King" ];
 
-    var SUIT_MAP = [ "Clubs", "Diamonds", "Hearts", "Spades" ];
+    var SUIT_MAP = [ Deck.SUIT_CLUBS, Deck.SUIT_DIAMONDS, Deck.SUIT_HEARTS, Deck.SUIT_SPADES ];
     var VALUES = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11 ];
 
-
-    // PRIVATE PROPERTIES //
     var _deck = new Array();
     var _dealtCards = new Array();
     var _removedCards = new Array();
@@ -45,10 +28,16 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
         return _acesHigh;
     };
 
-    this.collect = function () {
-        _dealtCards.forEach ( function ( card ) {
-            moveCard( card, _deck, this.INSERT_BOTTOM )
-        } );
+    this.collect = function ( includeRemoved ) {
+        while ( _dealtCards.length ) {
+            moveCard( _dealtCards[ 0 ], _deck, Deck.INSERT_BOTTOM );
+        }
+
+        if ( includeRemoved ) {
+            while( _removedCards.length ) {
+                moveCard( _removedCards[ 0 ], _deck, Deck.INSERT_BOTTOM );
+            }
+        }
     };
 
     this.count = function () {
@@ -69,7 +58,7 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
         }
 
         while ( howMany-- ) {
-            cardsToDeal.push( moveCard( _deck[ 0 ], _dealtCards, this.INSERT_BOTTOM ) );
+            cardsToDeal.push( moveCard( _deck[ 0 ], _dealtCards, Deck.INSERT_BOTTOM ) );
         }
 
         return cardsToDeal;
@@ -92,22 +81,22 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
             handleError( "Dealing Error", "Deck is empty." );
         }
 
-        return moveCard( _deck[ Math.floor( Math.random() * _deck.length ) ], _deck, _dealtCards, this.INSERT_BOTTOM );
+        return moveCard( _deck[ Math.floor( Math.random() * _deck.length ) ], _dealtCards, Deck.INSERT_BOTTOM );
     };
 
     this.remove = function ( selection ) {
-        return getCards( selection, _deck, _removedCards, this.INSERT_BOTTOM );
+        return getCards( selection, _deck, _removedCards, Deck.INSERT_BOTTOM );
     };
 
     this.select = function ( selection ) {
-        return getCards( selection, _deck, _dealtCards, this.INSERT_BOTTOM );
+        return getCards( selection, _deck, _dealtCards, Deck.INSERT_BOTTOM );
     };
 
     this.shuffle = function () {
         var shuffledDeck = [];
 
         while ( _deck.length ) {
-            shuffledDeck.push( _deck.splice(  Math.floor( Math.random() * _deck.length ), 1 )[ 0 ] );
+            shuffledDeck.push( _deck.splice( Math.floor( Math.random() * _deck.length ), 1 )[ 0 ] );
         }
 
         _deck = shuffledDeck;
@@ -229,15 +218,15 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
 
         // remove card from source stack, if existing
         switch( card.getState() ) {
-            case _that.CARD_STATE_DEALT :
+            case Deck.CARD_STATE_DEALT :
                 from = _dealtCards;
             break;
 
-            case _that.CARD_STATE_IN_DECK :
+            case Deck.CARD_STATE_IN_DECK :
                 from = _deck;
             break;
 
-            case _that.CARD_STATE_REMOVED :
+            case Deck.CARD_STATE_REMOVED :
                 from = _removedCards;
             break;
 
@@ -257,15 +246,15 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
         }
 
         switch ( position ) {
-            case _that.INSERT_TOP :
+            case Deck.INSERT_TOP :
                 to.unshift( card );
             break;
 
-            case _that.INSERT_MIDDLE_RANDOM :
+            case Deck.INSERT_MIDDLE_RANDOM :
                 to.splice( Math.floor( Math.random() * ( to.length -1 ) ) + 1, 0, card );
             break;
 
-            case _that.INSERT_BOTTOM :
+            case Deck.INSERT_BOTTOM :
             case undefined :
                 to.push( card );
             break;
@@ -277,21 +266,21 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
         // set new card state
         switch ( to ) {
             case _deck :
-                state = _that.CARD_STATE_IN_DECK;
+                state = Deck.CARD_STATE_IN_DECK;
             break;
 
             case _dealtCards :
-                state = _that.CARD_STATE_DEALT;
+                state = Deck.CARD_STATE_DEALT;
             break;
 
             case _removedCards :
-                state = _that.CARD_STATE_REMOVED;
+                state = Deck.CARD_STATE_REMOVED;
             break ;
 
             default :
         }
 
-        card.getStateSetter.call( this ).call( card, state );
+        card.getStateSetter.call( _that ).call( card, state );
         return card;
     }
 
@@ -299,8 +288,8 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
     // CARD OBJECT //
     function Card ( rank, suit, value ) {
         var _rank = rank;       // pip or face: Ace, Four, Seven, Jack, King, etc.
+        var _state;             // specifies whether card is in deck, dealt, or removed from play
         var _suit = suit;       // symbol: Hearts, Clubs, etc.; "" for Jokers
-        var _state = state;     // specifies whether card is in deck, dealt, or removed from play
         var _value = value;     // numeric value to mathematically compare cards
 
 
@@ -345,3 +334,17 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
     // STARTING POINT //
     createCards();
 }
+
+// CONSTANTS //
+Deck.CARD_STATE_DEALT = "Dealt";
+Deck.CARD_STATE_IN_DECK = "In Deck";
+Deck.CARD_STATE_REMOVED = "Removed";
+
+Deck.INSERT_BOTTOM = -1;
+Deck.INSERT_MIDDLE_RANDOM = -2;
+Deck.INSERT_TOP = -3;
+
+Deck.SUIT_CLUBS = "Clubs";
+Deck.SUIT_DIAMONDS = "Diamonds";
+Deck.SUIT_HEARTS = "Hearts";
+Deck.SUIT_SPADES = "Spades";
