@@ -10,7 +10,7 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
                      "Seven", "Eight", "Nine", "Ten", "Jack", "Queen", "King" ];
 
     var SUIT_MAP = [ Deck.SUIT_CLUBS, Deck.SUIT_DIAMONDS, Deck.SUIT_HEARTS, Deck.SUIT_SPADES ];
-    var VALUES = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11 ];
+    var VALUES = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10 ];
 
     var _deck = new Array();
     var _dealtCards = new Array();
@@ -138,7 +138,7 @@ function Deck ( values, acesHigh, shuffled, withJokers ) {
         // create cards and put into the deck
         for ( var i = 0; i < SUIT_MAP.length; i++ ) {
             for ( var j = 1; j < RANK_MAP.length; j++ ) {
-                moveCard( new Card( j, SUIT_MAP[ i ], j == 1 && _acesHigh ? values[ values.length - 1 ] : values[ j ] ), _deck );
+                moveCard( new Card( j, SUIT_MAP[ i ], j == 1 && _acesHigh ? values[ values.length - 1 ] + 1 : values[ j ] ), _deck );
             }
         }
 
