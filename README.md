@@ -2,9 +2,26 @@
 
 Deck.JS is a basic playing cards engine written in vanilla JavaScript. It provides a handful of methods that allow users to perform standard actions on a French-suited 52-card deck.
 
+
 ### Documentation
 
+
 ##### Instantiation
+
+```javascript
+var deck = new Deck();
+```
+
+Without any parameters, calling the constructor creates a non-shuffled `Deck` instance with 52 cards, without Jokers, Aces low, and with cards having numeric values from 1 to 10 for Ace to King. To configure the deck, pass the following parameters in order:
+
+  - __values__ an array 15 elements corresponding to the values of Joker, Ace to King, and Ace High. Internally this is represented by 0 (Joker), 1 - 10 ( Ace - 10 and face cards), and 11 (Aces high)
+
+  - __acesHigh__ a boolean value specifying whether Aces should have a numeric value of 11 (true) or 1 (false)
+
+  - __shuffled__ a boolean value specifying whether the the deck is shuffled or sorted
+
+  - __withJokers__ a boolean value specifying whether two Jokers are included in the deck; both Jokers will have a value of 0.
+
 
 ##### Deck API
 
@@ -27,7 +44,9 @@ Deck.JS is a basic playing cards engine written in vanilla JavaScript. It provid
 - __remove( selection )__ returns an array of `Card` objects that have been taken from the deck and are not in play. These cards are not put back into the deck when `collect()` is called, unless specified otherwise. The selection parameter could be:
 
   - a rank value, where 1 = Ace and 13 = King. This removes cards of the same rank across all suits that are still in the deck.
+
   - a suit value, represented by the `Deck` object's suit constants (see below). This removes cards of the same suit that are still in the deck.
+
   - an array of objects with _rank_ and _suit_ keys that identify individual cards.
 
 - __select( selection )__ returns an array of `Card` objects from the deck. These cards are considered dealt. The `selection` parameter works in the same way as the `remove()` method.
@@ -47,7 +66,7 @@ Deck.JS is a basic playing cards engine written in vanilla JavaScript. It provid
 
   - Deck.INSERT_BOTTOM for inserting cards at the bottom of the deck
   - Deck.INSERT_MIDDLE_RANDOM for inserting cards at random positions between the top and bottom cards in the deck
-  - Deck.INSERT_TOP for inserting cards at the top of the deck;
+  - Deck.INSERT_TOP for inserting cards at the top of the deck
 
 - Suit Constants: use to specify the cards to be removed with `remove()` or selected with `select()`
 
@@ -65,7 +84,7 @@ Deck.JS is a basic playing cards engine written in vanilla JavaScript. It provid
 
 ##### Card API
 
-- __face()__ returns true if a card is a Jack, Queen or King and false if not.
+- __face()__ returns `true` if a card is a Jack, Queen or King and `false` if not.
 
 - __getRank()__ returns the rank of a card, which is 0 for Jokers and 1 to 13 for Ace to King.
 
