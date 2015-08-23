@@ -47,7 +47,7 @@ Without any parameters, calling the constructor creates a non-shuffled `Deck` in
 
   - a suit, represented by the `Deck` object's suit constants (see below). This removes cards of the same suit that are still in the deck.
 
-  - an array of objects with `rank` and `suit` keys that identify individual cards: `[ { rank: 3, suit: Deck.SUIT_CLUBS }, { rank: 12, suit: Deck.SUIT_HEARTS } ... ]`.
+  - an array of objects with `rank` and `suit` keys that identify individual cards: `[ { rank: 3, suit: Deck.SUIT_CLUBS }, { rank: 12, suit: Deck.SUIT_HEARTS }, ... ]`.
 
 - __select( selection )__ returns an array of `Card` objects from the deck. These cards are considered dealt. The `selection` parameter works in the same way as in the `remove()` method.
 
